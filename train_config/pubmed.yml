@@ -10,6 +10,7 @@ params:
     dropout: 0.1
     weight_decay: 0.0
     sample_coverage: 10
+    eval_val_every: 10
 phase:
   - end: 100         
     sampler: 'node'
