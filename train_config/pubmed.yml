@@ -12,6 +12,6 @@ params:
     sample_coverage: 10
     eval_val_every: 10
 phase:
-  - end: 100         
+  - end: 50         
     sampler: 'node'
     size_subgraph: 4500
