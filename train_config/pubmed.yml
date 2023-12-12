@@ -9,8 +9,8 @@ params:
   - lr: 0.01
     dropout: 0.1
     weight_decay: 0.0
-    sample_coverage: 50
+    sample_coverage: 10
 phase:
-  - end: 30         
+  - end: 100         
     sampler: 'node'
     size_subgraph: 4500
