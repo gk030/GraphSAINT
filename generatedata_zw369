@@ -1,0 +1,107 @@
+import os
+import torch
+!pip install torch=='2.0.1'
+!pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-2.0.1+cu102.html
+print("Using torch", torch.__version__)
+
+#Getting Data
+import scipy.sparse as sp
+from torch_geometric.datasets import CitationFull
+
+#Replace with PubMed for that data
+dataset = CitationFull('/tmp/snapdata', 'CiteSeer')
+
+data = dataset[0]
+print(data)
+num_nodes = data.num_nodes
+print('CiteSeer has {} nodes'.format(num_nodes))
+
+num_edges = data.num_edges
+print('CiteSeer has {} edges'.format(num_edges))
+
+#Doing adjacency full matrix
+import numpy as np
+import scipy.sparse as sp
+
+sources = data.edge_index[0].numpy()
+print(data.edge_index[0].numpy())
+destinations = data.edge_index[0].numpy()
+print(data.edge_index[1].numpy())
+
+num_classes = data.y
+print(num_classes)
+
+# Create a CSR matrix with ones at the edge positions
+adj_full_matrix = sp.csr_matrix((np.ones(len(sources)), (sources, destinations)), shape=(num_nodes, num_nodes))
+sp.save_npz('adj_full.npz', adj_full_matrix)
+
+#print(adj_full_matrix)
+
+
+#@title Splitting Data - For the Adjacency Neighbors Matrix
+import numpy as np
+import os
+from sklearn.model_selection import train_test_split
+
+# Edge data 
+sources = data.edge_index[0].numpy()
+destinations = data.edge_index[0].numpy()
+
+# Combine source and destination nodes to form the edge_index
+edge_index = np.vstack((sources, destinations)).T
+
+node_features = data.x.numpy()
+
+# Define the proportion of nodes for training, testing, and validation
+train_ratio = 0.8
+test_ratio = 0.1
+val_ratio = 0.1
+
+# Split the nodes into training, testing, and validation sets
+nodes_train, nodes_remaining, _, _ = train_test_split(np.arange(len(node_features)), np.zeros(len(node_features)), test_size=(test_ratio + val_ratio), random_state=42)
+nodes_test, nodes_val, _, _ = train_test_split(nodes_remaining, np.zeros(len(nodes_remaining)), test_size=val_ratio / (test_ratio + val_ratio), random_state=42)
+
+# Find edges corresponding to the split nodes
+edge_train = edge_index[np.isin(edge_index[:, 0], nodes_train) & np.isin(edge_index[:, 1], nodes_train)]
+edge_test = edge_index[np.isin(edge_index[:, 0], nodes_test) & np.isin(edge_index[:, 1], nodes_test)]
+edge_val = edge_index[np.isin(edge_index[:, 0], nodes_val) & np.isin(edge_index[:, 1], nodes_val)]
+
+# Filter node features based on the split nodes
+X_train = node_features[nodes_train]
+X_test = node_features[nodes_test]
+X_val = node_features[nodes_val]
+
+# Print the sizes of the sets
+print(f"Number of nodes in training set: {len(nodes_train)}")
+print(f"Number of nodes in testing set: {len(nodes_test)}")
+print(f"Number of nodes in validation set: {len(nodes_val)}")
+
+print(f"Number of edges in training set: {len(edge_train)}")
+print(f"Number of edges in testing set: {len(edge_test)}")
+print(f"Number of edges in validation set: {len(edge_val)}")
+
+adj_train_matrix = sp.csr_matrix((np.ones(len(edge_train)), (edge_train[:, 0], edge_train[:, 1])), shape=(num_nodes, num_nodes))
+#print(adj_train_matrix)
+sp.save_npz('adj_train.npz', adj_train_matrix)
+
+#For the role.json dictionary
+import json
+role_dict = {'tr': nodes_train.tolist(), 'va': nodes_val.tolist(), 'te': nodes_test.tolist()}
+print(role_dict)
+with open('role.json', 'w') as json_file:
+  json.dump(role_dict, json_file)
+
+#For the class map dictionary
+class_map_dict = {}
+for node_index, label in enumerate(data.y):
+class_map_dict[node_index] = int(label)
+
+print(class_map_dict)
+# Save the class_map dictionary to class_map.json
+with open('class_map.json', 'w') as json_file:
+json.dump(class_map_dict, json_file)
+
+#For the feature map
+print(node_features)
+np.save('feats.npy', node_features)
+
