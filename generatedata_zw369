@@ -105,3 +105,12 @@ json.dump(class_map_dict, json_file)
 print(node_features)
 np.save('feats.npy', node_features)
 
+#Generating Results
+!rm -r GraphSAINT/
+!git clone https://github.com/gk030/GraphSAINT.git
+
+%cd GraphSAINT
+!python graphsaint/setup.py build_ext --inplace
+!python -m graphsaint.pytorch_version.train --data_prefix ./data/citeseer --train_config ./train_config/citeseer.yml --gpu -1
+
+
